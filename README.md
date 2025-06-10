@@ -285,3 +285,5 @@ Novel2.0/
 - 优化数据模型
 - 增强系统稳定性
 - 添加更多功能 
+![image](https://github.com/user-attachments/assets/b390a784-844c-427f-9cfe-0d112ed0d85c)
+
