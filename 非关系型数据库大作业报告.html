@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>非关系型数据库系统期末大作业报告</title>
+    <style>
+        body {
+            font-family: 'SimSun', serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3, h4 {
+            color: #333;
+            margin-top: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 18px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        h3 {
+            font-size: 16px;
+        }
+        p {
+            text-indent: 2em;
+            margin-bottom: 10px;
+        }
+        .cover {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .cover h1 {
+            margin-top: 100px;
+            margin-bottom: 100px;
+        }
+        .cover p {
+            text-indent: 0;
+            margin: 10px 0;
+        }
+        img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        /* Word specific styles */
+        .page-break { page-break-before: always; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button style="margin-bottom: 20px; padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="downloadReportAsWord()">下载为 Word</button>
+        <!-- 报告封面 -->
+        <div class="cover">
+            <h1>2024学年第2学期《非关系型数据库系统》考查报告</h1>
+            <p><strong>课题名称：基于MongoDB的小说网站系统</strong></p>
+            <br><br>
+            <p>班级：20级大数据库1班</p>
+            <p>学号：1234567</p>
+            <p>姓名：张知星</p>
+            <p>2025年6月</p>
+        </div>
+
+        <!-- 目录 -->
+        <h2>目录</h2>
+        <p>（一）非关系型数据库集群的搭建</p>
+        <p>（二）数据库存储对象的定义</p>
+        <p>（三）Web应用编写</p>
+        <p>（四）数据库的备份</p>
+        <p>（五）个人总结</p>
+
+        <!-- 正文内容 -->
+        <h2>（一）非关系型数据库集群的搭建</h2>
+        <p>本项目采用MongoDB分片集群架构，以支持高并发读写和大数据量存储。MongoDB是一种文档型数据库，非常适合存储半结构化和非结构化数据，如小说内容、用户信息等。</p>
+        
+        <h3>1. 集群架构设计</h3>
+        <p>本项目的MongoDB集群由以下组件组成：</p>
+        <ul>
+            <li><strong>分片（Shard）</strong>：使用两个副本集（rs0和rs1）作为分片，每个副本集包含3个节点。</li>
+            <li><strong>配置服务器（Config Server）</strong>：使用一个包含2个节点的副本集。</li>
+            <li><strong>路由服务器（Mongos）</strong>：作为应用程序和分片集群之间的接口。</li>
+        </ul>
+        
+        <h3>2. 环境准备</h3>
+        <p>在Windows 10系统上安装MongoDB 4.2.17版本，并创建以下目录结构：</p>
+        <pre>
+D:\mongodb\shard\rs0\db1
+D:\mongodb\shard\rs0\db2
+D:\mongodb\shard\rs0\db3
+D:\mongodb\shard\rs1\db1
+D:\mongodb\shard\rs1\db2
+D:\mongodb\shard\rs1\db3
+D:\mongodb\shard\config\config0
+D:\mongodb\shard\config\config1
+        </pre>
+        
+        <h3>3. 集群启动脚本</h3>
+        <p>编写PowerShell脚本(mongodb_cluster.ps1)用于自动化集群的启动、停止和状态检查：</p>
+        <pre>
+# Set MongoDB paths
+$MONGODB_BIN = "D:\mongodb\mongodb1\bin"
+$RS0_PATH = "D:\mongodb\shard\rs0"
+$RS1_PATH = "D:\mongodb\shard\rs1"
+$CONFIG_PATH = "D:\mongodb\shard\config"
+
+function Start-Cluster {
+    Write-Host "Starting MongoDB Sharded Cluster..." -ForegroundColor Green
+    
+    Write-Host "Starting RS0 nodes..." -ForegroundColor Yellow
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $RS0_PATH\db1 --replSet rs0 --port 1000 --shardsvr" -WindowStyle Normal
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $RS0_PATH\db2 --replSet rs0 --port 1001 --shardsvr" -WindowStyle Normal
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $RS0_PATH\db3 --replSet rs0 --port 1002 --shardsvr" -WindowStyle Normal
+
+    Write-Host "Starting RS1 nodes..." -ForegroundColor Yellow
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $RS1_PATH\db1 --replSet rs1 --port 2000 --shardsvr" -WindowStyle Normal
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $RS1_PATH\db2 --replSet rs1 --port 2001 --shardsvr" -WindowStyle Normal
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $RS1_PATH\db3 --replSet rs1 --port 2002 --shardsvr" -WindowStyle Normal
+
+    Write-Host "Starting Config Servers..." -ForegroundColor Yellow
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $CONFIG_PATH\config0 --replSet config --port 3000 --configsvr" -WindowStyle Normal
+    Start-Process -FilePath "$MONGODB_BIN\mongod" -ArgumentList "--dbpath $CONFIG_PATH\config1 --replSet config --port 3001 --configsvr" -WindowStyle Normal
+
+    Write-Host "Starting Mongos..." -ForegroundColor Yellow
+    Start-Process -FilePath "$MONGODB_BIN\mongos" -ArgumentList "--configdb config/localhost:3000,localhost:3001 --port 4000" -WindowStyle Normal
+}
+        </pre>
+        
+        <h3>4. 副本集初始化</h3>
+        <p>对于每个副本集，执行初始化配置：</p>
+        <pre>
+// RS0副本集初始化
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "localhost:1000" },
+    { _id: 1, host: "localhost:1001" },
+    { _id: 2, host: "localhost:1002" }
+  ]
+})
+
+// RS1副本集初始化
+rs.initiate({
+  _id: "rs1",
+  members: [
+    { _id: 0, host: "localhost:2000" },
+    { _id: 1, host: "localhost:2001" },
+    { _id: 2, host: "localhost:2002" }
+  ]
+})
+
+// 配置服务器副本集初始化
+rs.initiate({
+  _id: "config",
+  configsvr: true,
+  members: [
+    { _id: 0, host: "localhost:3000" },
+    { _id: 1, host: "localhost:3001" }
+  ]
+})
+        </pre>
+        
+        <h3>5. 分片配置</h3>
+        <p>通过mongos服务器添加分片，并对数据库进行分片设置：</p>
+        <pre>
+// 添加分片
+sh.addShard("rs0/localhost:1000,localhost:1001,localhost:1002")
+sh.addShard("rs1/localhost:2000,localhost:2001,localhost:2002")
+
+// 对数据库启用分片
+sh.enableSharding("zhangzhixing")
+
+// 对集合进行分片
+sh.shardCollection("zhangzhixing.users", { "user_id": "hashed" })
+sh.shardCollection("zhangzhixing.novels", { "user_id": "hashed" })
+        </pre>
+        
+        <h3>6. 集群状态验证</h3>
+        <p>使用Check-Status函数验证集群状态，确保所有副本集和分片都正常运行：</p>
+        <img src="cluster_status.png" alt="MongoDB集群状态检查截图">
+        <p>如上图所示，集群状态检查显示所有副本集都处于健康状态，分片配置正确，分片键为用户ID的哈希值。数据库名称设置为"zhangzhixing"（我的姓名全拼），符合要求。</p>
+        
+        <h2>（二）数据库存储对象的定义</h2>
+        <h3>（1）课题简介</h3>
+        <p>本项目是一个基于MongoDB的小说应用平台，提供小说创作、阅读、评论等功能。平台采用前后端分离架构，后端使用FastAPI构建RESTful API，前端使用React开发用户界面，数据存储采用MongoDB分片集群以支持高并发和大数据量。</p>
+
+        <p>主要功能包括：</p>
+        <ul>
+            <li>用户注册与登录：支持用户注册、登录和个人信息管理</li>
+            <li>小说浏览与搜索：支持按标签、热门度等浏览小说，支持关键词搜索</li>
+            <li>小说阅读：提供舒适的阅读体验，支持设置字体大小、主题等</li>
+            <li>收藏与历史：记录用户的收藏小说和阅读历史</li>
+            <li>小说创作：允许作者发布和管理自己的作品</li>
+            <li>评论与互动：允许读者对小说进行评论和点赞</li>
+        </ul>
+
+        <p>项目技术栈如下：</p>
+        <ul>
+            <li><strong>后端技术栈</strong>：FastAPI（Python 3.9+）、MongoDB（分片集群）、Motor（异步MongoDB驱动）、JWT认证、Pydantic数据验证</li>
+            <li><strong>前端技术栈</strong>：React、Vite、React Router、React Context API、Ant Design组件库</li>
+        </ul>
+
+        <h3>（2）数据库存储设计</h3>
+
+        <p>本项目采用MongoDB分片集群架构，以支持高并发读写和大数据量存储。MongoDB是一种文档型数据库，其灵活的文档模型非常适合存储小说内容和用户信息等半结构化数据。</p>
+
+        <h4>分片策略</h4>
+        <p>为了提高系统性能和扩展性，我们对关键集合进行了分片设计：</p>
+        <ul>
+            <li><strong>用户集合(users)</strong>：使用user_id字段的哈希值作为分片键。这样可以确保用户数据均匀分布在各个分片上，避免热点问题。</li>
+            <li><strong>小说集合(novels)</strong>：同样使用user_id（作者ID）的哈希值作为分片键。这样不仅能保证数据均匀分布，还能将同一作者的作品尽可能放在同一分片上，提高查询效率。</li>
+        </ul>
+
+        <p>数据库连接配置如下：</p>
+        <pre>
+from motor.motor_asyncio import AsyncIOMotorClient
+from ..core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+class MongoDB:
+    client: AsyncIOMotorClient = None
+    db = None
+    novels = None
+    users = None
+
+    async def connect_to_database(self):
+        """连接到MongoDB数据库"""
+        logger.info("连接到MongoDB...")
+        self.client = AsyncIOMotorClient(settings.MONGODB_URL)
+        self.db = self.client[settings.DATABASE_NAME]
+        self.novels = self.db[settings.NOVELS_COLLECTION]
+        self.users = self.db[settings.USERS_COLLECTION]
+        logger.info("连接到MongoDB成功")
+
+    # ... 其他方法 ...
+
+mongodb = MongoDB()
+        </pre>
+
+        <p>配置参数设置：</p>
+        <pre>
+# MongoDB配置
+MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:4000")
+DATABASE_NAME: str = os.getenv("DATABASE_NAME", "zhangzhixing")
+NOVELS_COLLECTION: str = os.getenv("NOVELS_COLLECTION", "novels")
+USERS_COLLECTION: str = os.getenv("USERS_COLLECTION", "users")
+        </pre>
+
+        <h3>（3）数据库对象清单</h3>
+
+        <h4>1. 用户集合 (users)</h4>
+        <p>存储用户相关信息，包括账号、密码、个人资料、收藏列表等。</p>
+
+        <table>
+            <tr>
+                <th>字段名</th>
+                <th>类型</th>
+                <th>说明</th>
+            </tr>
+            <tr>
+                <td>_id</td>
+                <td>ObjectId</td>
+                <td>MongoDB自动生成的唯一标识符</td>
+            </tr>
+            <tr>
+                <td>user_id</td>
+                <td>String</td>
+                <td>与_id相同，用作分片键</td>
+            </tr>
+            <tr>
+                <td>username</td>
+                <td>String</td>
+                <td>用户名，唯一</td>
+            </tr>
+            <tr>
+                <td>email</td>
+                <td>String</td>
+                <td>电子邮箱，唯一</td>
+            </tr>
+            <tr>
+                <td>password</td>
+                <td>String</td>
+                <td>加密后的密码</td>
+            </tr>
+            <tr>
+                <td>nickname</td>
+                <td>String</td>
+                <td>昵称</td>
+            </tr>
+            <tr>
+                <td>avatar</td>
+                <td>String</td>
+                <td>头像URL</td>
+            </tr>
+            <tr>
+                <td>phone</td>
+                <td>String</td>
+                <td>电话号码</td>
+            </tr>
+            <tr>
+                <td>gender</td>
+                <td>String</td>
+                <td>性别</td>
+            </tr>
+            <tr>
+                <td>createTime</td>
+                <td>Date</td>
+                <td>账号创建时间</td>
+            </tr>
+            <tr>
+                <td>lastLoginTime</td>
+                <td>Date</td>
+                <td>最后登录时间</td>
+            </tr>
+            <tr>
+                <td>favoriteNovels</td>
+                <td>Array</td>
+                <td>收藏的小说ID列表</td>
+            </tr>
+            <tr>
+                <td>readingHistory</td>
+                <td>Array</td>
+                <td>阅读历史</td>
+            </tr>
+            <tr>
+                <td>roles</td>
+                <td>Array</td>
+                <td>用户角色列表</td>
+            </tr>
+            <tr>
+                <td>isActive</td>
+                <td>Boolean</td>
+                <td>账号是否活跃</td>
+            </tr>
+        </table>
+
+        <p>用户模型定义代码：</p>
+        <pre>
+class UserBase(BaseModel):
+    username: str  # 用户名，唯一
+    email: EmailStr  # 用户邮箱，唯一
+
+class UserCreate(UserBase):
+    password: str  # 用户密码，至少6个字符
+    nickname: Optional[str]  # 昵称
+    phone: Optional[str]  # 电话
+    gender: Optional[str]  # 性别
+    avatar: Optional[str]  # 头像
+
+class UserInDB(UserBase):
+    id: Optional[str]  # 对应MongoDB的_id
+    user_id: Optional[str]  # 与_id相同，用作分片键
+    nickname: Optional[str]
+    phone: Optional[str]
+    gender: Optional[str]
+    avatar: Optional[str]
+    password: str  # 存储加密后的密码
+    createTime: datetime
+    lastLoginTime: Optional[datetime]
+    favoriteNovels: List[str]  # 收藏的小说ID列表
+    readingHistory: List[str]  # 阅读历史
+    roles: List[str]  # 用户角色
+    isActive: bool  # 账号是否活跃
+        </pre>
+
+        <h4>2. 小说集合 (novels)</h4>
+        <p>存储小说信息，包括基本信息、章节内容、统计数据等。</p>
+
+        <table>
+            <tr>
+                <th>字段名</th>
+                <th>类型</th>
+                <th>说明</th>
+            </tr>
+            <tr>
+                <td>_id</td>
+                <td>ObjectId</td>
+                <td>MongoDB自动生成的唯一标识符</td>
+            </tr>
+            <tr>
+                <td>user_id</td>
+                <td>String</td>
+                <td>作者ID，用作分片键</td>
+            </tr>
+            <tr>
+                <td>title</td>
+                <td>String</td>
+                <td>小说标题</td>
+            </tr>
+            <tr>
+                <td>author</td>
+                <td>String</td>
+                <td>作者名</td>
+            </tr>
+            <tr>
+                <td>tags</td>
+                <td>Array</td>
+                <td>标签列表</td>
+            </tr>
+            <tr>
+                <td>publication_status</td>
+                <td>String</td>
+                <td>发布状态（连载中/已完结）</td>
+            </tr>
+            <tr>
+                <td>cover</td>
+                <td>String</td>
+                <td>封面图片URL</td>
+            </tr>
+            <tr>
+                <td>description</td>
+                <td>String</td>
+                <td>小说简介</td>
+            </tr>
+            <tr>
+                <td>createTime</td>
+                <td>Date</td>
+                <td>创建时间</td>
+            </tr>
+            <tr>
+                <td>updateTime</td>
+                <td>Date</td>
+                <td>最后更新时间</td>
+            </tr>
+            <tr>
+                <td>chapters</td>
+                <td>Array</td>
+                <td>章节列表</td>
+            </tr>
+            <tr>
+                <td>meta</td>
+                <td>Object</td>
+                <td>元数据（阅读量、点赞数等）</td>
+            </tr>
+        </table>
+
+        <p>章节模型结构：</p>
+        <pre>
+{
+    chapterId: String,  // 章节ID
+    title: String,      // 章节标题
+    content: String,    // 章节内容
+    publishTime: Date,  // 发布时间
+    wordCount: Number,  // 字数
+    comments: Array     // 评论列表
+}
+        </pre>
+
+        <p>小说模型定义代码：</p>
+        <pre>
+class NovelModel(BaseModel):
+    id: str  # MongoDB的_id
+    user_id: str  # 作者ID
+    title: str  # 小说标题
+    author: str  # 作者名
+    tags: List[str]  # 标签
+    publication_status: str  # 发布状态
+    cover: str  # 封面URL
+    description: str  # 描述
+    createTime: datetime  # 创建时间
+    updateTime: datetime  # 更新时间
+    chapters: List[ChapterModel]  # 章节列表
+    meta: NovelMetaModel  # 元数据
+        </pre>
+
+        <h3>（4）数据的输入</h3>
+
+        <p>本项目通过以下两种方式导入数据：</p>
+
+        <h4>1. 爬虫导入</h4>
+        <p>编写了Python爬虫程序(novel_crawler.py)，从网络上爬取小说数据并存入MongoDB数据库。爬虫程序主要实现以下功能：</p>
+        <ul>
+            <li>抓取小说基本信息（标题、作者、简介等）</li>
+            <li>抓取小说章节内容</li>
+            <li>生成随机标签和发布状态</li>
+            <li>计算字数统计</li>
+            <li>将数据保存到MongoDB</li>
+        </ul>
+
+        <p>核心爬虫代码片段：</p>
+        <pre>
+class NovelCrawler:
+    def __init__(self, novel_url, user_id="system"):
+        self.novel_url = novel_url
+        self.base_url = "https://www.cb62.bar"
+        self.client = MongoClient('mongodb://localhost:4000')
+        self.db = self.client['zhangzhixing']
+        self.novels = self.db['novels']
+        self.user_id = user_id
+        # ... 其他初始化代码 ...
+
+    def crawl(self):
+        main_html = self.get_page(self.novel_url)
+        if not main_html:
+            logging.error(f"主页爬取失败: {self.novel_url}")
+            return False
+        
+        novel = self.build_novel_document(main_html)
+        chapters = self.parse_chapters(main_html)
+        
+        novel['chapters'] = chapters
+        novel['meta']['totalChapters'] = len(chapters)
+        novel['meta']['totalWords'] = sum(chapter['wordCount'] for chapter in chapters)
+        
+        self._save_to_mongodb(novel)
+        logging.info(f"成功保存小说 {novel['title']}，包含 {len(chapters)} 章")
+        return True
+        </pre>
+
+        <h4>2. Web界面输入</h4>
+        <p>通过Web界面，用户可以创建账号、发布小说、添加章节内容等。这些操作通过前端界面将数据提交给后端API，再由后端API将数据存入MongoDB数据库。</p>
+
+        <p>相关API接口：</p>
+        <ul>
+            <li><code>POST /api/users/register</code>：用户注册</li>
+            <li><code>POST /api/novels</code>：创建新小说</li>
+            <li><code>POST /api/novels/{novel_id}/chapters</code>：添加新章节</li>
+        </ul>
+
+        <p>数据导入后的MongoDB数据示例：</p>
+        <img src="mongodb_data.png" alt="MongoDB数据示例截图">
+
+        <h2>（三）Web应用编写</h2>
+        <h3>（1）用户认证功能</h3>
+        <p>用户认证功能是本系统的基础，实现了用户注册、登录、身份验证等核心功能。认证基于JWT（JSON Web Token）机制，确保API访问的安全性。</p>
+
+        <h4>1）功能简介</h4>
+        <p>用户认证模块提供以下功能：</p>
+        <ul>
+            <li>用户注册：新用户可以创建账号</li>
+            <li>用户登录：已注册用户可以登录系统</li>
+            <li>获取用户信息：已登录用户可以查看自己的信息</li>
+            <li>更新用户信息：已登录用户可以修改自己的信息</li>
+            <li>密码加密：使用安全的哈希算法存储密码</li>
+        </ul>
+
+        <p>用户认证流程如下：</p>
+        <ol>
+            <li>用户在前端输入注册信息或登录凭证</li>
+            <li>前端将数据发送至后端API</li>
+            <li>后端验证数据并在数据库中查询或创建用户</li>
+            <li>登录成功后，后端生成JWT令牌并返回给前端</li>
+            <li>前端保存JWT令牌，并在后续请求中携带此令牌</li>
+        </ol>
+
+        <h4>2）实现代码</h4>
+
+        <p>后端实现 - JWT认证（app/core/auth.py）：</p>
+        <pre>
+from datetime import datetime, timedelta
+from typing import Optional
+from jose import JWTError, jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from ..models.user import UserInDB, User
+from ..core.config import settings
+from ..database.mongodb import mongodb
+from passlib.context import CryptContext
+
+# 密码加密上下文
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# OAuth2 认证模式
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/users/login")
+
+def verify_password(plain_password, hashed_password):
+    """验证密码"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    """生成密码哈希"""
+    return pwd_context.hash(password)
+
+async def authenticate_user(username: str, password: str):
+    """认证用户"""
+    user = await mongodb.users.find_one({"username": username})
+    if not user or not verify_password(password, user["password"]):
+        return False
+    return user
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """创建访问令牌"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+        </pre>
+
+        <p>后端实现 - 用户API（app/api/users.py的部分代码）：</p>
+        <pre>
+@router.post("/register", response_model=User)
+async def register_user(user: UserCreate):
+    """用户注册"""
+    # 检查用户名或邮箱是否已存在
+    existing_user = await mongodb.users.find_one({
+        "$or": [
+            {"username": user.username},
+            {"email": user.email}
+        ]
+    })
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="用户名或邮箱已被注册"
+        )
+    
+    # 创建新用户
+    hashed_password = get_password_hash(user.password)
+    user_id = str(ObjectId())
+    user_in_db = UserInDB(
+        id=user_id,
+        user_id=user_id,
+        username=user.username,
+        email=user.email,
+        password=hashed_password,
+        nickname=user.nickname,
+        phone=user.phone,
+        gender=user.gender,
+        avatar=user.avatar or "",
+        createTime=datetime.now(),
+        lastLoginTime=None,
+        favoriteNovels=[],
+        readingHistory=[],
+        roles=["user"],
+        isActive=True
+    )
+    
+    # 插入到数据库
+    result = await mongodb.users.insert_one(user_in_db.dict())
+    
+    # 返回用户信息（不含密码）
+    created_user = await mongodb.users.find_one({"_id": result.inserted_id})
+    created_user["id"] = str(created_user["_id"])
+    return created_user
+
+@router.post("/login", response_model=TokenResponse)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """用户登录"""
+    user = await authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 更新最后登录时间
+    await mongodb.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"lastLoginTime": datetime.now()}}
+    )
+    
+    # 生成访问令牌
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["username"]},
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": str(user["_id"]),
+        "username": user["username"]
+    }
+        </pre>
+
+        <p>前端实现 - 认证上下文（src/contexts/AuthContext.jsx）：</p>
+        <pre>
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { userApi } from '../services/api';
+
+// 创建认证上下文
+const AuthContext = createContext(null);
+
+// 认证提供者组件
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // 检查是否已登录（从本地存储获取令牌）
+  useEffect(() => {
+    const checkLoggedIn = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // 获取用户信息
+          const userData = await userApi.getCurrentUser();
+          setUser(userData);
+        } catch (err) {
+          console.error('获取用户信息失败:', err);
+          localStorage.removeItem('token');
+        }
+      }
+      setLoading(false);
+    };
+    
+    checkLoggedIn();
+  }, []);
+  
+  // 登录方法
+  const login = async (username, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await userApi.login(username, password);
+      localStorage.setItem('token', data.access_token);
+      const userData = await userApi.getCurrentUser();
+      setUser(userData);
+      return true;
+    } catch (err) {
+      setError(err.message || '登录失败');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 注册方法
+  const register = async (userData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await userApi.register(userData);
+      return true;
+    } catch (err) {
+      setError(err.message || '注册失败');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 登出方法
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+  };
+  
+  return (
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      error, 
+      login, 
+      logout, 
+      register,
+      isAuthenticated: !!user 
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// 自定义钩子，便于在组件中使用认证上下文
+export const useAuth = () => useContext(AuthContext);
+</pre>
+
+        <p>前端实现 - 登录页面（src/pages/Auth/LoginPage.jsx的部分代码）：</p>
+        <pre>
+import React, { useState } from 'react';
+import { Form, Input, Button, Alert, Card, Typography } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+
+const { Title, Text } = Typography;
+
+const LoginPage = () => {
+  const { login, error } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  
+  const onFinish = async (values) => {
+    setLoading(true);
+    const success = await login(values.username, values.password);
+    setLoading(false);
+    if (success) {
+      navigate('/');
+    }
+  };
+  
+  return (
+    <div className="login-container">
+      <Card className="login-card">
+        <Title level={2} className="text-center">登录</Title>
+        
+        {error && <Alert message={error} type="error" showIcon className="mb-4" />}
+        
+        <Form
+          name="login"
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+        >
+          <Form.Item
+            name="username"
+            rules={[{ required: true, message: '请输入用户名!' }]}
+          >
+            <Input prefix={<UserOutlined />} placeholder="用户名" />
+          </Form.Item>
+          
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: '请输入密码!' }]}
+          >
+            <Input.Password prefix={<LockOutlined />} placeholder="密码" />
+          </Form.Item>
+          
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block loading={loading}>
+              登录
+            </Button>
+          </Form.Item>
+          
+          <div className="text-center">
+            <Text>还没有账号? <Link to="/register">立即注册</Link></Text>
+          </div>
+        </Form>
+      </Card>
+    </div>
+  );
+};
+
+export default LoginPage;
+</pre>
+
+        <p>登录页面效果：</p>
+        <img src="login_page.png" alt="登录页面截图" />
+
+        <h3>（2）小说浏览功能</h3>
+        <p>小说浏览功能是系统的核心功能之一，允许用户查看和发现各种小说，支持按标签、热门度等进行筛选和搜索。</p>
+
+        <h4>1）功能简介</h4>
+        <p>小说浏览模块提供以下功能：</p>
+        <ul>
+            <li>热门小说展示：展示阅读量最高的小说</li>
+            <li>最新小说列表：展示最近更新的小说</li>
+            <li>标签筛选：根据小说标签（如玄幻、都市、历史等）筛选小说</li>
+            <li>关键词搜索：通过标题、作者等关键词搜索小说</li>
+            <li>分页显示：支持大量小说数据的分页浏览</li>
+        </ul>
+
+        <p>浏览功能的输入参数包括：</p>
+        <ul>
+            <li>页码（page）：当前查看的页码</li>
+            <li>每页数量（limit）：每页显示的小说数量</li>
+            <li>标签（tags）：筛选的标签</li>
+            <li>出版状态（publication_status）：连载中/已完结</li>
+            <li>搜索关键词（search）：搜索的关键词</li>
+        </ul>
+
+        <p>输出结果为小说列表，包含小说的基本信息（标题、作者、封面、简介等）和分页信息。</p>
+
+        <h4>2）实现代码</h4>
+
+        <p>后端实现 - 小说列表API（app/api/novels.py的部分代码）：</p>
+        <pre>
+@router.get("/novels", response_model=NovelListResponse)
+async def get_novels(
+    page: int = Query(1, ge=1, description="页码"),
+    limit: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE, description="每页数量"),
+    tags: Optional[str] = Query(None, description="标签筛选，多个标签用逗号分隔"),
+    publication_status: Optional[str] = Query(None, description="出版状态筛选"),
+    search: Optional[str] = Query(None, description="搜索关键词")
+):
+    """获取小说列表"""
+    skip = (page - 1) * limit
+    
+    # 构建查询条件
+    query = {}
+    
+    # 标签筛选
+    if tags:
+        tag_list = tags.split(",")
+        query["tags"] = {"$all": tag_list}
+    
+    # 出版状态筛选
+    if publication_status:
+        query["publication_status"] = publication_status
+    
+    # 搜索关键词
+    if search:
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"author": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # 查询总数
+    total = await mongodb.novels.count_documents(query)
+    
+    # 查询小说列表
+    cursor = mongodb.novels.find(query).skip(skip).limit(limit).sort("updateTime", -1)
+    
+    # 构建响应数据
+    novels = []
+    async for doc in cursor:
+        # 确保 _id 是字符串
+        doc["_id"] = str(doc["_id"])
+        
+        # 构建小说项
+        novel = {
+            "_id": doc["_id"],
+            "title": doc["title"],
+            "author": doc["author"],
+            "tags": doc["tags"],
+            "publication_status": doc["publication_status"],
+            "cover": doc["cover"],
+            "description": doc["description"][:100] + "..." if len(doc["description"]) > 100 else doc["description"],
+            "updateTime": doc["updateTime"],
+            "meta": doc["meta"]
+        }
+        novels.append(novel)
+    
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "novels": novels
+    }
+</pre>
+
+        <p>前端实现 - 首页（src/pages/Home/HomePage.jsx的部分代码）：</p>
+        <pre>
+import React, { useEffect, useState } from 'react';
+import { Typography, Row, Col, Card, Carousel, Spin, Empty, Tabs, Tag, Space, Divider } from 'antd';
+import { FireOutlined, ClockCircleOutlined, BookOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
+import { novelApi } from '../../services/api';
+import NovelCard from '../../components/novel/NovelCard';
+
+const { Title, Text } = Typography;
+const { TabPane } = Tabs;
+
+const HomePage = () => {
+  const [loading, setLoading] = useState(true);
+  const [popularNovels, setPopularNovels] = useState([]);
+  const [recentNovels, setRecentNovels] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [carouselNovels, setCarouselNovels] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // 获取热门小说
+        const popularData = await novelApi.getPopularNovels(8);
+        setPopularNovels(popularData.recommendations);
+        
+        // 使用前4本热门小说作为轮播图
+        setCarouselNovels(popularData.recommendations.slice(0, 4));
+        
+        // 获取最新小说
+        const recentData = await novelApi.getNovelList(1, 12);
+        setRecentNovels(recentData.novels);
+        
+        // 获取所有标签
+        const tagsData = await novelApi.getTags();
+        setTags(tagsData.tags);
+      } catch (error) {
+        console.error('加载首页数据失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // 渲染轮播图
+  const renderCarousel = () => (
+    <Carousel autoplay>
+      {carouselNovels.map(novel => (
+        <div key={novel._id}>
+          <Link to={`/novel/${novel._id}`}>
+            <div className="carousel-item" style={{ backgroundImage: `url(${novel.cover})` }}>
+              <div className="carousel-content">
+                <h3>{novel.title}</h3>
+                <p>{novel.description}</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+      ))}
+    </Carousel>
+  );
+
+  // 渲染热门小说
+  const renderPopularNovels = () => (
+    <div className="section">
+      <Title level={4}>
+        <FireOutlined /> 热门小说
+      </Title>
+      <Row gutter={[16, 16]}>
+        {popularNovels.map(novel => (
+          <Col xs={12} sm={8} md={6} key={novel._id}>
+            <NovelCard novel={novel} />
+          </Col>
+        ))}
+      </Row>
+    </div>
+  );
+
+  // 渲染最新小说
+  const renderRecentNovels = () => (
+    <div className="section">
+      <Title level={4}>
+        <ClockCircleOutlined /> 最新小说
+      </Title>
+      <Row gutter={[16, 16]}>
+        {recentNovels.map(novel => (
+          <Col xs={12} sm={8} md={6} key={novel._id}>
+            <NovelCard novel={novel} />
+          </Col>
+        ))}
+      </Row>
+    </div>
+  );
+
+  return (
+    <div className="home-page">
+      {loading ? (
+        <div className="loading-container">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <>
+          {/* 轮播图 */}
+          {carouselNovels.length > 0 && renderCarousel()}
+          
+          {/* 主体内容 */}
+          <div className="container">
+            {/* 标签列表 */}
+            <div className="section">
+              <Title level={4}>
+                <AppstoreOutlined /> 小说分类
+              </Title>
+              <div className="tags-container">
+                {tags.map(tag => (
+                  <Link to={`/category?tags=${tag}`} key={tag}>
+                    <Tag color="blue" style={{ margin: '5px' }}>{tag}</Tag>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            
+            {/* 热门小说 */}
+            {popularNovels.length > 0 ? renderPopularNovels() : <Empty description="暂无热门小说" />}
+            
+            {/* 最新小说 */}
+            {recentNovels.length > 0 ? renderRecentNovels() : <Empty description="暂无最新小说" />}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default HomePage;
+</pre>
+
+        <p>小说卡片组件（src/components/novel/NovelCard.jsx）：</p>
+        <pre>
+import React from 'react';
+import { Card, Tag, Typography, Space } from 'antd';
+import { EyeOutlined, LikeOutlined, ReadOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
+import './NovelCard.css';
+
+const { Meta } = Card;
+const { Text } = Typography;
+
+const NovelCard = ({ novel }) => {
+  return (
+    <Link to={`/novel/${novel._id}`}>
+      <Card
+        hoverable
+        cover={
+          <div className="card-cover">
+            <img alt={novel.title} src={novel.cover} />
+            <div className="card-status">
+              <Tag color={novel.publication_status === "连载中" ? "green" : "blue"}>
+                {novel.publication_status}
+              </Tag>
+            </div>
+          </div>
+        }
+        className="novel-card"
+      >
+        <Meta
+          title={novel.title}
+          description={
+            <div className="card-meta">
+              <Text type="secondary">{novel.author}</Text>
+              <div className="card-stats">
+                <Space>
+                  <span><EyeOutlined /> {novel.meta.readCount}</span>
+                  <span><LikeOutlined /> {novel.meta.likeCount}</span>
+                </Space>
+              </div>
+              <div className="card-tags">
+                {novel.tags.slice(0, 2).map(tag => (
+                  <Tag key={tag}>{tag}</Tag>
+                ))}
+                {novel.tags.length > 2 && <Tag>...</Tag>}
+              </div>
+            </div>
+          }
+        />
+      </Card>
+    </Link>
+  );
+};
+
+export default NovelCard;
+</pre>
+
+        <p>首页效果：</p>
+        <img src="home_page.png" alt="首页截图" />
+
+        <h3>（3）小说阅读功能</h3>
+        <p>小说阅读功能是系统的核心功能，提供流畅、舒适的阅读体验，支持章节切换、阅读设置等功能。</p>
+
+        <h4>1）功能简介</h4>
+        <p>小说阅读模块提供以下功能：</p>
+        <ul>
+            <li>章节内容展示：显示章节正文内容</li>
+            <li>章节导航：支持上一章、下一章切换</li>
+            <li>章节目录：展示所有章节列表，支持快速跳转</li>
+            <li>阅读设置：调整字体大小、行高、主题等</li>
+            <li>阅读进度记录：自动记录用户阅读进度</li>
+        </ul>
+
+        <p>阅读功能的输入参数包括：</p>
+        <ul>
+            <li>小说ID：要阅读的小说ID</li>
+            <li>章节ID：要阅读的章节ID</li>
+            <li>阅读设置：字体大小、行高、主题等</li>
+        </ul>
+
+        <p>输出结果为章节内容，包括标题、正文、发布时间等。</p>
+
+        <h4>2）实现代码</h4>
+
+        <p>后端实现 - 获取章节内容API（app/api/novels.py的部分代码）：</p>
+        <pre>
+@router.get("/novels/{novel_id}/chapters/{chapter_id}", response_model=ChapterDetailResponse)
+async def get_chapter_detail(
+    novel_id: str = Path(..., description="小说ID"),
+    chapter_id: str = Path(..., description="章节ID")
+):
+    """获取章节详情"""
+    # 查询小说
+    novel = await mongodb.novels.find_one({"_id": ObjectId(novel_id)})
+    if not novel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="小说不存在")
+    
+    # 查找章节
+    chapter = None
+    chapter_index = -1
+    for i, ch in enumerate(novel["chapters"]):
+        if ch["chapterId"] == chapter_id:
+            chapter = ch
+            chapter_index = i
+            break
+    
+    if not chapter:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="章节不存在")
+    
+    # 获取前一章和后一章的ID
+    prev_chapter = None
+    next_chapter = None
+    
+    if chapter_index > 0:
+        prev_chapter = {
+            "chapterId": novel["chapters"][chapter_index - 1]["chapterId"],
+            "title": novel["chapters"][chapter_index - 1]["title"]
+        }
+    
+    if chapter_index < len(novel["chapters"]) - 1:
+        next_chapter = {
+            "chapterId": novel["chapters"][chapter_index + 1]["chapterId"],
+            "title": novel["chapters"][chapter_index + 1]["title"]
+        }
+    
+    # 递增阅读计数
+    await mongodb.novels.update_one(
+        {"_id": ObjectId(novel_id)},
+        {"$inc": {"meta.readCount": 1}}
+    )
+    
+    return {
+        "novelId": str(novel["_id"]),
+        "novelTitle": novel["title"],
+        "chapter": {
+            "chapterId": chapter["chapterId"],
+            "title": chapter["title"],
+            "content": chapter["content"],
+            "publishTime": chapter["publishTime"],
+            "wordCount": chapter["wordCount"]
+        },
+        "prevChapter": prev_chapter,
+        "nextChapter": next_chapter,
+        "chapterList": [
+            {"chapterId": ch["chapterId"], "title": ch["title"]}
+            for ch in novel["chapters"]
+        ]
+    }
+</pre>
+
+        <p>前端实现 - 阅读页面（src/pages/Reader/ReaderPage.jsx的部分代码）：</p>
+        <pre>
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  Typography, Button, Drawer, Menu, 
+  Spin, message, Tooltip, Space, 
+  Divider, Dropdown, Slider, Switch
+} from 'antd';
+import { 
+  MenuOutlined, ArrowLeftOutlined, 
+  ArrowRightOutlined, SettingOutlined,
+  BgColorsOutlined, FontSizeOutlined,
+  LeftOutlined, HomeOutlined
+} from '@ant-design/icons';
+import { novelApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+
+const { Title, Paragraph } = Typography;
+
+// 阅读设置的默认值
+const defaultSettings = {
+  fontSize: 18,
+  lineHeight: 1.8,
+  theme: 'light',
+  letterSpacing: 0.05
+};
+
+const ReaderPage = () => {
+  const { id, chapterId } = useParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  
+  const [loading, setLoading] = useState(true);
+  const [chapter, setChapter] = useState(null);
+  const [novel, setNovel] = useState(null);
+  const [chapterList, setChapterList] = useState([]);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [readerSettings, setReaderSettings] = useState(() => {
+    // 从localStorage加载阅读设置，如果没有则使用默认值
+    const savedSettings = localStorage.getItem('readerSettings');
+    return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+  });
+  
+  // 保存阅读设置到localStorage
+  useEffect(() => {
+    localStorage.setItem('readerSettings', JSON.stringify(readerSettings));
+    
+    // 应用主题
+    if (readerSettings.theme === 'dark') {
+      document.body.classList.add('dark-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+    }
+  }, [readerSettings]);
+  
+  // 加载小说和章节内容
+  useEffect(() => {
+    const fetchChapter = async () => {
+      setLoading(true);
+      try {
+        const data = await novelApi.getChapterDetail(id, chapterId);
+        setChapter(data.chapter);
+        setNovel({
+          id: data.novelId,
+          title: data.novelTitle
+        });
+        setChapterList(data.chapterList);
+        
+        // 保存阅读历史
+        if (isAuthenticated && user) {
+          await novelApi.saveReadingHistory({
+            novelId: data.novelId,
+            novelTitle: data.novelTitle,
+            chapterId: data.chapter.chapterId,
+            chapterTitle: data.chapter.title
+          });
+        }
+        
+        // 增加阅读计数
+        await novelApi.incrementReadCount(id);
+      } catch (error) {
+        console.error('加载章节失败:', error);
+        message.error('加载章节失败');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchChapter();
+    
+    // 离开页面时，移除dark-theme类
+    return () => {
+      document.body.classList.remove('dark-theme');
+    };
+  }, [id, chapterId, isAuthenticated, user]);
+  
+  // 切换到上一章
+  const goPrevChapter = () => {
+    const currentIndex = chapterList.findIndex(item => item.chapterId === chapterId);
+    if (currentIndex > 0) {
+      navigate(`/reader/${id}/${chapterList[currentIndex - 1].chapterId}`);
+    } else {
+      message.info('已经是第一章了');
+    }
+  };
+  
+  // 切换到下一章
+  const goNextChapter = () => {
+    const currentIndex = chapterList.findIndex(item => item.chapterId === chapterId);
+    if (currentIndex < chapterList.length - 1) {
+      navigate(`/reader/${id}/${chapterList[currentIndex + 1].chapterId}`);
+    } else {
+      message.info('已经是最后一章了');
+    }
+  };
+  
+  // 章节目录抽屉
+  const renderDrawer = () => (
+    <Drawer
+      title="章节目录"
+      placement="left"
+      closable={true}
+      onClose={() => setDrawerVisible(false)}
+      open={drawerVisible}
+      width={300}
+    >
+      <Menu
+        mode="vertical"
+        selectedKeys={[chapterId]}
+        onClick={({ key }) => {
+          navigate(`/reader/${id}/${key}`);
+          setDrawerVisible(false);
+        }}
+      >
+        {chapterList.map(item => (
+          <Menu.Item key={item.chapterId}>{item.title}</Menu.Item>
+        ))}
+      </Menu>
+    </Drawer>
+  );
+  
+  // 阅读设置抽屉
+  const renderSettingsDrawer = () => (
+    <Drawer
+      title="阅读设置"
+      placement="right"
+      closable={true}
+      onClose={() => setSettingsVisible(false)}
+      open={settingsVisible}
+      width={300}
+    >
+      <div className="settings-item">
+        <div className="settings-label">
+          <FontSizeOutlined /> 字体大小
+        </div>
+        <Slider
+          min={14}
+          max={24}
+          value={readerSettings.fontSize}
+          onChange={value => setReaderSettings({...readerSettings, fontSize: value})}
+        />
+      </div>
+      
+      <Divider />
+      
+      <div className="settings-item">
+        <div className="settings-label">
+          <BgColorsOutlined /> 夜间模式
+        </div>
+        <Switch
+          checked={readerSettings.theme === 'dark'}
+          onChange={checked => setReaderSettings({...readerSettings, theme: checked ? 'dark' : 'light'})}
+        />
+      </div>
+      
+      <Divider />
+      
+      <div className="settings-item">
+        <div className="settings-label">行高</div>
+        <Slider
+          min={1.2}
+          max={2.2}
+          step={0.1}
+          value={readerSettings.lineHeight}
+          onChange={value => setReaderSettings({...readerSettings, lineHeight: value})}
+        />
+      </div>
+      
+      <Divider />
+      
+      <div className="settings-item">
+        <div className="settings-label">字间距</div>
+        <Slider
+          min={0}
+          max={0.2}
+          step={0.01}
+          value={readerSettings.letterSpacing}
+          onChange={value => setReaderSettings({...readerSettings, letterSpacing: value})}
+        />
+      </div>
+    </Drawer>
+  );
+  
+  return (
+    <div className="reader-page">
+      {/* 顶部导航 */}
+      <div className="reader-header">
+        <Space>
+          <Button icon={<LeftOutlined />} onClick={() => navigate(`/novel/${id}`)}>
+            返回
+          </Button>
+          <Button icon={<HomeOutlined />} onClick={() => navigate('/')}>
+            首页
+          </Button>
+        </Space>
+        
+        <div className="reader-title">
+          {novel?.title} - {chapter?.title}
+        </div>
+        
+        <Space>
+          <Tooltip title="章节目录">
+            <Button icon={<MenuOutlined />} onClick={() => setDrawerVisible(true)} />
+          </Tooltip>
+          <Tooltip title="阅读设置">
+            <Button icon={<SettingOutlined />} onClick={() => setSettingsVisible(true)} />
+          </Tooltip>
+        </Space>
+      </div>
+      
+      {/* 内容区域 */}
+      <div className="reader-content" style={{
+        fontSize: `${readerSettings.fontSize}px`,
+        lineHeight: readerSettings.lineHeight,
+        letterSpacing: `${readerSettings.letterSpacing}em`
+      }}>
+        {loading ? (
+          <div className="loading-container">
+            <Spin size="large" />
+          </div>
+        ) : (
+          <>
+            <Title level={3} className="chapter-title">{chapter?.title}</Title>
+            
+            <Paragraph className="chapter-content">
+              {chapter?.content.split('\n').map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </Paragraph>
+          </>
+        )}
+      </div>
+      
+      {/* 底部导航 */}
+      <div className="reader-footer">
+        <Button 
+          type="primary" 
+          icon={<ArrowLeftOutlined />} 
+          onClick={goPrevChapter}
+          disabled={loading}
+        >
+          上一章
+        </Button>
+        <Button 
+          type="primary" 
+          icon={<ArrowRightOutlined />} 
+          onClick={goNextChapter}
+          disabled={loading}
+        >
+          下一章
+        </Button>
+      </div>
+      
+      {/* 章节目录抽屉 */}
+      {renderDrawer()}
+      
+      {/* 阅读设置抽屉 */}
+      {renderSettingsDrawer()}
+    </div>
+  );
+};
+
+export default ReaderPage;
+</pre>
+
+        <p>阅读页面效果：</p>
+        <img src="reader_page.png" alt="阅读页面截图" />
+
+        <h3>（4）小说收藏功能</h3>
+        <p>小说收藏功能是系统的核心功能之一，允许用户收藏自己喜欢的小说，以便后续阅读。</p>
+
+        <h4>1）功能简介</h4>
+        <p>小说收藏模块提供以下功能：</p>
+        <ul>
+            <li>收藏小说：用户可以收藏自己喜欢的小说</li>
+            <li>取消收藏：用户可以取消收藏已收藏的小说</li>
+            <li>收藏列表：展示所有已收藏的小说</li>
+        </ul>
+
+        <p>收藏功能的输入参数包括：</p>
+        <ul>
+            <li>小说ID：要收藏的小说ID</li>
+        </ul>
+
+        <p>输出结果为收藏状态，包括已收藏和未收藏。</p>
+
+        <h4>2）实现代码</h4>
+
+        <p>后端实现 - 收藏API（app/api/users.py的部分代码）：</p>
+        <pre>
+@router.post("/users/{user_id}/favorites/{novel_id}", response_model=FavoriteResponse)
+async def add_favorite(
+    user_id: str = Path(..., description="用户ID"),
+    novel_id: str = Path(..., description="小说ID")
+):
+    """添加收藏"""
+    # 查询用户
+    user = await mongodb.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+    
+    # 检查小说是否已收藏
+    if novel_id in user["favoriteNovels"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="小说已收藏")
+    
+    # 添加收藏
+    await mongodb.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$push": {"favoriteNovels": novel_id}}
+    )
+    
+    return {
+        "status": "success",
+        "message": "小说收藏成功"
+    }
+
+@router.delete("/users/{user_id}/favorites/{novel_id}", response_model=FavoriteResponse)
+async def remove_favorite(
+    user_id: str = Path(..., description="用户ID"),
+    novel_id: str = Path(..., description="小说ID")
+):
+    """取消收藏"""
+    # 查询用户
+    user = await mongodb.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+    
+    # 检查小说是否已收藏
+    if novel_id not in user["favoriteNovels"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="小说未收藏")
+    
+    # 取消收藏
+    await mongodb.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$pull": {"favoriteNovels": novel_id}}
+    )
+    
+    return {
+        "status": "success",
+        "message": "小说取消收藏成功"
+    }
+        </pre>
+
+        <p>前端实现 - 收藏页面（src/pages/Favorites/FavoritesPage.jsx的部分代码）：</p>
+        <pre>
+import React, { useEffect, useState } from 'react';
+import { Typography, Row, Col, Card, Carousel, Spin, Empty } from 'antd';
+import { novelApi } from '../../services/api';
+import NovelCard from '../../components/novel/NovelCard';
+
+const { Title } = Typography;
+
+const FavoritesPage = () => {
+  const [loading, setLoading] = useState(true);
+  const [favoriteNovels, setFavoriteNovels] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const data = await novelApi.getFavoriteNovels();
+        setFavoriteNovels(data.novels);
+      } catch (error) {
+        console.error('加载收藏小说失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return (
+    <div className="favorites-page">
+      {loading ? (
+        <div className="loading-container">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <>
+          {favoriteNovels.length > 0 ? (
+            <div className="container">
+              <Title level={4}>收藏的小说</Title>
+              <Row gutter={[16, 16]}>
+                {favoriteNovels.map(novel => (
+                  <Col xs={12} sm={8} md={6} key={novel._id}>
+                    <NovelCard novel={novel} />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          ) : (
+            <Empty description="暂无收藏的小说" />
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default FavoritesPage;
+</pre>
+
+        <p>收藏页面效果：</p>
+        <img src="favorites_page.png" alt="收藏页面截图" />
+
+        <h2>（四）数据库的备份</h2>
+        <p>数据库备份是保证系统数据安全的重要措施。针对MongoDB分片集群，本项目设计了完整的备份与恢复方案。</p>
+
+        <h3>1. 备份方案设计</h3>
+        <p>本项目采用以下备份策略：</p>
+        <ul>
+            <li><strong>定期备份</strong>：每日凌晨进行全量备份</li>
+            <li><strong>增量备份</strong>：使用MongoDB操作日志(oplog)进行增量备份</li>
+            <li><strong>多副本保存</strong>：备份文件存储在多个位置，包括本地存储和云存储</li>
+        </ul>
+
+        <h3>2. 备份工具</h3>
+        <p>使用MongoDB官方工具进行备份：</p>
+        <ul>
+            <li><strong>mongodump</strong>：用于创建数据库的二进制导出</li>
+            <li><strong>mongorestore</strong>：用于恢复mongodump创建的备份</li>
+            <li><strong>PowerShell脚本</strong>：自动化备份过程</li>
+        </ul>
+
+        <h3>3. 备份脚本实现</h3>
+        <p>创建PowerShell脚本(mongodb_backup.ps1)自动执行备份任务：</p>
+        <pre>
+# MongoDB备份脚本
+$MONGODB_BIN = "D:\mongodb\mongodb1\bin"
+$BACKUP_PATH = "D:\mongodb\backup"
+$MONGODB_URL = "mongodb://localhost:4000"
+$DATABASE_NAME = "zhangzhixing"
+
+# 创建带有日期时间的备份目录
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$backup_dir = "$BACKUP_PATH\$DATABASE_NAME`_$timestamp"
+New-Item -ItemType Directory -Force -Path $backup_dir | Out-Null
+
+# 执行MongoDB备份
+function Backup-MongoDB {
+    Write-Host "开始备份MongoDB数据库: $DATABASE_NAME" -ForegroundColor Green
+    
+    # 使用mongodump进行备份
+    & "$MONGODB_BIN\mongodump" --uri="$MONGODB_URL" --db="$DATABASE_NAME" --out="$backup_dir"
+    
+    # 检查备份结果
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "备份成功完成! 备份目录: $backup_dir" -ForegroundColor Green
+        
+        # 压缩备份文件
+        $zip_file = "$BACKUP_PATH\$DATABASE_NAME`_$timestamp.zip"
+        Compress-Archive -Path "$backup_dir\*" -DestinationPath $zip_file
+        Write-Host "备份文件已压缩: $zip_file" -ForegroundColor Green
+        
+        # 保留最近7天的备份，删除更早的备份
+        Get-ChildItem -Path $BACKUP_PATH -Directory | Where-Object {
+            $_.Name -match "$DATABASE_NAME`_\d{8}_\d{6}" -and
+            $_.CreationTime -lt (Get-Date).AddDays(-7)
+        } | Remove-Item -Recurse -Force
+        
+        Write-Host "已清理7天前的备份文件" -ForegroundColor Yellow
+    } else {
+        Write-Host "备份失败! 错误代码: $LASTEXITCODE" -ForegroundColor Red
+    }
+}
+
+# 执行备份
+Backup-MongoDB
+</pre>
+
+        <h3>4. 数据恢复过程</h3>
+        <p>数据恢复使用mongorestore工具，恢复过程如下：</p>
+        <pre>
+# MongoDB恢复脚本
+$MONGODB_BIN = "D:\mongodb\mongodb1\bin"
+$BACKUP_PATH = "D:\mongodb\backup"
+$MONGODB_URL = "mongodb://localhost:4000"
+$DATABASE_NAME = "zhangzhixing"
+
+# 选择要恢复的备份
+$backups = Get-ChildItem -Path $BACKUP_PATH -Directory | Where-Object {
+    $_.Name -match "$DATABASE_NAME`_\d{8}_\d{6}"
+} | Sort-Object CreationTime -Descending
+
+if ($backups.Count -eq 0) {
+    Write-Host "未找到可用的备份!" -ForegroundColor Red
+    exit
+}
+
+Write-Host "可用的备份:" -ForegroundColor Yellow
+for ($i=0; $i -lt $backups.Count; $i++) {
+    Write-Host "[$i] $($backups[$i].Name) - $($backups[$i].CreationTime)" -ForegroundColor Cyan
+}
+
+$selection = Read-Host "请选择要恢复的备份 (0-$($backups.Count-1))"
+if ($selection -lt 0 -or $selection -ge $backups.Count) {
+    Write-Host "无效的选择!" -ForegroundColor Red
+    exit
+}
+
+$selected_backup = $backups[$selection]
+$backup_path = "$($selected_backup.FullName)\$DATABASE_NAME"
+
+# 执行恢复
+Write-Host "开始恢复数据库: $DATABASE_NAME 从 $($selected_backup.Name)" -ForegroundColor Green
+& "$MONGODB_BIN\mongorestore" --uri="$MONGODB_URL" --db="$DATABASE_NAME" --drop $backup_path
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "数据库恢复成功完成!" -ForegroundColor Green
+} else {
+    Write-Host "数据库恢复失败! 错误代码: $LASTEXITCODE" -ForegroundColor Red
+}
+</pre>
+
+        <h3>5. 备份验证</h3>
+        <p>为确保备份的有效性，每次备份完成后进行自动验证：</p>
+        <ul>
+            <li>检查备份文件的完整性</li>
+            <li>测试从备份恢复的可行性</li>
+            <li>验证关键数据的一致性</li>
+        </ul>
+
+        <p>备份操作截图：</p>
+        <img src="mongodb_backup.png" alt="MongoDB备份截图" />
+
+        <h2>（五）个人总结</h2>
+        <p>通过本次基于MongoDB的小说应用平台项目，我深入理解了非关系型数据库在现代Web应用中的重要作用，特别是在处理半结构化数据、支持高并发和水平扩展方面的优势。</p>
+
+        <p>MongoDB作为一种文档型数据库，其灵活的数据模型非常适合存储小说内容、用户信息等多变的数据结构。在本项目中，我们不需要预先定义严格的表结构，可以根据需求动态调整数据模型，这极大地提高了开发效率和系统的可扩展性。同时，MongoDB的分片集群架构使得系统能够应对大规模数据和高并发访问，为小说平台的持续发展提供了良好的技术基础。</p>
+
+        <p>在实现过程中，我特别体会到了以下几点非关系型数据库的特点和优势：</p>
+
+        <p><strong>1. 灵活的数据模型</strong>：MongoDB的文档模型允许我们以更接近应用程序数据结构的方式存储数据。例如，小说的章节内容可以直接嵌套在小说文档中，而不需要像关系型数据库那样进行复杂的表连接操作。这种存储方式更符合小说应用的数据访问模式，提高了查询效率。</p>
+
+        <p><strong>2. 水平扩展能力</strong>：通过分片技术，MongoDB可以轻松地在多台服务器上分布数据，从而支持海量数据存储和处理。在本项目中，我们按照用户ID进行分片，确保同一用户的数据尽可能分布在同一分片上，减少了跨分片查询，提高了性能。</p>
+
+        <p><strong>3. 高可用性</strong>：MongoDB的副本集机制保证了数据的冗余和系统的高可用性。即使某个节点发生故障，系统仍然可以继续运行，并能自动进行故障转移，确保服务的连续性。</p>
+
+        <p><strong>4. 异步操作支持</strong>：MongoDB的异步驱动与FastAPI的异步特性完美结合，使得系统能够高效处理大量并发请求，提供更好的用户体验。</p>
+
+        <p>当然，非关系型数据库也有其局限性。例如，MongoDB不支持像SQL那样的复杂事务和连接操作，在某些需要强一致性和复杂关联查询的场景下可能不是最佳选择。因此，在实际应用中，我们需要根据具体需求选择合适的数据库技术，有时甚至需要结合关系型和非关系型数据库，构建混合数据架构。</p>
+
+        <p>作为技术从业者，我认为我们有责任选择和使用最适合项目需求的技术方案，而不是盲目追随技术潮流。在本项目中，MongoDB是一个很好的选择，因为它的特性与小说应用的需求高度匹配。但在其他场景下，可能需要不同的技术选型。同时，我们也应该关注数据安全和隐私保护，确保用户数据的安全存储和合规使用。</p>
+
+        <p>最后，通过本次项目，我不仅掌握了MongoDB分片集群的配置和管理技能，还深入理解了分布式数据库的核心概念和设计原则。这些知识和经验将对我未来的技术生涯产生深远的影响，使我能够更好地应对各种数据存储和处理挑战。</p>
+    </div>
+</body>
+<script>
+    function downloadReportAsWord() {
+        const container = document.querySelector('.container');
+        if (!container) {
+            alert('找不到报告内容。');
+            return;
+        }
+
+        const title = document.title || '报告';
+        const content = container.innerHTML;
+
+        // 构建Word文档的完整HTML内容，使用字符串拼接避免模板字符串冲突
+        const html = '<!DOCTYPE html>\\n' +
+                     '<html lang="zh-CN">\\n' +
+                     '<head>\\n' +
+                     '    <meta charset="UTF-8">\\n' +
+                     '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\\n' +
+                     '    <title>' + title + '</title>\\n' +
+                     '    <style>\\n' +
+                     '        body {\\n' +
+                     '            font-family: \'SimSun\', serif;\\n' +
+                     '            line-height: 1.6;\\n' +
+                     '            margin: 0;\\n' +
+                     '            padding: 20px;\\n' +
+                     '            color: #333;\\n' +
+                     '        }\\n' +
+                     '        .container {\\n' +
+                     '            max-width: 980px;\\n' +
+                     '            margin: 0 auto;\\n' +
+                     '            background-color: #fff;\\n' +
+                     '            padding: 30px;\\n' +
+                     '            box-shadow: 0 0 10px rgba(0,0,0,0.1);\\n' +
+                     '        }\\n' +
+                     '        h1, h2, h3, h4 {\\n' +
+                     '            color: #333;\\n' +
+                     '            margin-top: 20px;\\n' +
+                     '        }\\n' +
+                     '        h1 {\\n' +
+                     '            text-align: center;\\n' +
+                     '            font-size: 24px;\\n' +
+                     '            margin-bottom: 30px;\\n' +
+                     '        }\\n' +
+                     '        h2 {\\n' +
+                     '            font-size: 18px;\\n' +
+                     '            border-bottom: 1px solid #ddd;\\n' +
+                     '            padding-bottom: 5px;\\n' +
+                     '        }\\n' +
+                     '        h3 {\\n' +
+                     '            font-size: 16px;\\n' +
+                     '        }\\n' +
+                     '        p {\\n' +
+                     '            text-indent: 2em;\\n' +
+                     '            margin-bottom: 10px;\\n' +
+                     '        }\\n' +
+                     '        .cover {\\n' +
+                     '            text-align: center;\\n' +
+                     '            margin-bottom: 40px;\\n' +
+                     '        }\\n' +
+                     '        .cover h1 {\\n' +
+                     '            margin-top: 100px;\\n' +
+                     '            margin-bottom: 100px;\\n' +
+                     '        }\\n' +
+                     '        .cover p {\\n' +
+                     '            text-indent: 0;\\n' +
+                     '            margin: 10px 0;\\n' +
+                     '        }\\n' +
+                     '        img {\\n' +
+                     '            max-width: 100%;\\n' +
+                     '            border: 1px solid #ddd;\\n' +
+                     '        }\\n' +
+                     '        code {\\n' +
+                     '            background-color: #f5f5f5;\\n' +
+                     '            padding: 2px 5px;\\n' +
+                     '            border-radius: 3px;\\n' +
+                     '            font-family: Consolas, monospace;\\n' +
+                     '        }\\n' +
+                     '        pre {\\n' +
+                     '            background-color: #f5f5f5;\\n' +
+                     '            padding: 10px;\\n' +
+                     '            border-radius: 3px;\\n' +
+                     '            overflow-x: auto;\\n' +
+                     '        }\\n' +
+                     '        table {\\n' +
+                     '            width: 100%;\\n' +
+                     '            border-collapse: collapse;\\n' +
+                     '            margin-bottom: 20px;\\n' +
+                     '        }\\n' +
+                     '        table, th, td {\\n' +
+                     '            border: 1px solid #ddd;\\n' +
+                     '        }\\n' +
+                     '        th, td {\\n' +
+                     '            padding: 8px;\\n' +
+                     '            text-align: left;\\n' +
+                     '        }\\n' +
+                     '        th {\\n' +
+                     '            background-color: #f5f5f5;\\n' +
+                     '        }\\n' +
+                     '        /* Word specific styles */\\n' +
+                     '        .page-break { page-break-before: always; }\\n' +
+                     '    </style>\\n' +
+                     '</head>\\n' +
+                     '<body>\\n' +
+                     content +
+                     '\\n</body>\\n' +
+                     '</html>';
+
+        const blob = new Blob([html], {
+            type: 'application/msword;charset=utf-8'
+        });
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${title}.doc`; // 可以修改为 .docx，但 .doc 的兼容性更广，且直接基于HTML转换通常生成的是简易的doc
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    }
+</script>
+</html>
